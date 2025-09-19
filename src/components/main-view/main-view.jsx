@@ -19,16 +19,20 @@ export const MainView = () => {
       .then((data) => {
         const normalized = Array.isArray(data)
           ? data.map((m) => ({
-              id: m._id || m.id,
+              id: m._id || m.id || m.MovieID || m.Title || m.title,
               title: m.title || m.Title || "",
               description: m.description || m.Description || "",
               genre:
-                (m.genre && (m.genre.name || m.genre)) ||
-                (m.Genre && (m.Genre.Name || m.Genre)) ||
+                (m.genre && typeof m.genre === "string" && m.genre) ||
+                (m.genre && m.genre.name) ||
+                (m.Genre && typeof m.Genre === "string" && m.Genre) ||
+                (m.Genre && m.Genre.Name) ||
                 "",
               director:
-                (m.director && (m.director.name || m.director)) ||
-                (m.Director && (m.Director.Name || m.Director)) ||
+                (m.director && typeof m.director === "string" && m.director) ||
+                (m.director && m.director.name) ||
+                (m.Director && typeof m.Director === "string" && m.Director) ||
+                (m.Director && m.Director.Name) ||
                 "",
               image: m.image || m.ImagePath || m.Image || "",
             }))
@@ -41,12 +45,47 @@ export const MainView = () => {
       });
   }, []);
 
+  // Get the genre name as plain text, no matter how it's stored on the movie
+  const getGenre = (movie) => {
+    if (!movie) return "";
+    if (movie.genre && typeof movie.genre === "string") return movie.genre;
+    if (movie.genre && movie.genre.name) return movie.genre.name;
+    if (movie.Genre && typeof movie.Genre === "string") return movie.Genre;
+    if (movie.Genre && movie.Genre.Name) return movie.Genre.Name;
+    return "";
+  };
+
   if (selectedMovie) {
+    const selectedGenre = getGenre(selectedMovie);
+    const similarMovies = movies.filter(
+      (m) =>
+        (m.id || m.title) !== (selectedMovie.id || selectedMovie.title) &&
+        getGenre(m) &&
+        getGenre(m) === selectedGenre
+    );
+
     return (
-      <MovieView
-        movie={selectedMovie}
-        onBackClick={() => setSelectedMovie(null)}
-      />
+      <div>
+        <MovieView
+          movie={selectedMovie}
+          onBackClick={() => setSelectedMovie(null)}
+        />
+        <hr />
+        <h3>Similar Movies</h3>
+        {similarMovies.length ? (
+          <div>
+            {similarMovies.map((m) => (
+              <MovieCard
+                key={m.id || m.title}
+                movie={m}
+                onMovieClick={(mv) => setSelectedMovie(mv)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div>No similar movies.</div>
+        )}
+      </div>
     );
   }
 
@@ -59,7 +98,7 @@ export const MainView = () => {
         <MovieCard
           key={movie.id || movie.title}
           movie={movie}
-          onMovieClick={(m) => setSelectedMovie(m)}
+          onMovieClick={(mv) => setSelectedMovie(mv)}
         />
       ))}
     </div>

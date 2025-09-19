@@ -1,4 +1,3 @@
-// src/components/movie-card/movie-card.jsx
 import PropTypes from "prop-types";
 
 export const MovieCard = ({ movie, onMovieClick }) => {
