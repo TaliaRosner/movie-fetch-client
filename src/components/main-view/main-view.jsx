@@ -56,24 +56,35 @@ export const MainView = () => {
   };
 
   if (selectedMovie) {
-    const selectedGenre = getGenre(selectedMovie);
+    const currentGenre = getGenre(selectedMovie);
+
     const similarMovies = movies.filter(
       (m) =>
         (m.id || m.title) !== (selectedMovie.id || selectedMovie.title) &&
-        getGenre(m) &&
-        getGenre(m) === selectedGenre
+        getGenre(m) === currentGenre
     );
 
     return (
-      <div>
+      <div style={{ padding: "20px" }}>
         <MovieView
           movie={selectedMovie}
           onBackClick={() => setSelectedMovie(null)}
         />
+
         <hr />
-        <h3>Similar Movies</h3>
-        {similarMovies.length ? (
-          <div>
+        <h3>Similar movies</h3>
+
+        {similarMovies.length === 0 ? (
+          <p>No similar movies found.</p>
+        ) : (
+          <div
+            style={{
+              display: "grid",
+              gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+              gap: "12px",
+              marginTop: "8px",
+            }}
+          >
             {similarMovies.map((m) => (
               <MovieCard
                 key={m.id || m.title}
@@ -82,8 +93,6 @@ export const MainView = () => {
               />
             ))}
           </div>
-        ) : (
-          <div>No similar movies.</div>
         )}
       </div>
     );
@@ -93,7 +102,13 @@ export const MainView = () => {
   if (!movies.length) return <div>No movies found.</div>;
 
   return (
-    <div>
+    <div
+      style={{
+        display: "grid",
+        gridTemplateColumns: "repeat(auto-fill, minmax(220px, 1fr))",
+        gap: "12px",
+      }}
+    >
       {movies.map((movie) => (
         <MovieCard
           key={movie.id || movie.title}
