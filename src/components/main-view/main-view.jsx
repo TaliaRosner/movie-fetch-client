@@ -1,58 +1,110 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
+import PropTypes from "prop-types";
 import { MovieCard } from "../movie-card/movie-card";
 import { MovieView } from "../movie-view/movie-view";
 
-export const MainView = () => {
-  const [movies, setMovies] = useState([
-    {
-      id: 1,
-      title: "The Matrix",
-      description: "A hacker discovers reality is a simulation.",
-      genre: "Sci-Fi",
-      director: "Lana Wachowski",
-      image: "https://m.media-amazon.com/images/I/51EG732BV3L._AC_SY679_.jpg",
-    },
-    {
-      id: 2,
-      title: "Inception",
-      description: "A thief enters dreams to steal secrets.",
-      genre: "Action",
-      director: "Christopher Nolan",
-      image: "https://m.media-amazon.com/images/I/81p+xe8cbnL._AC_SY679_.jpg",
-    },
-    {
-      id: 3,
-      title: "Interstellar",
-      description: "A journey to save humanity through space.",
-      genre: "Adventure",
-      director: "Christopher Nolan",
-      image:
-        "https://upload.wikimedia.org/wikipedia/en/b/bc/Interstellar_film_poster.jpg",
-    },
-  ]);
+const API_BASE = "https://movie-fetch-b460a958d87e.herokuapp.com";
 
+export const MainView = () => {
+  const [movies, setMovies] = useState([]);
   const [selectedMovie, setSelectedMovie] = useState(null);
+  const [error, setError] = useState("");
+
+  useEffect(() => {
+    fetch(`${API_BASE}/movies`)
+      .then((res) => {
+        if (!res.ok) throw new Error(`HTTP ${res.status}`);
+        return res.json();
+      })
+      .then((data) => {
+        const normalized = Array.isArray(data)
+          ? data.map((m) => ({
+              id: m._id || m.id || m.MovieID || m.Title || m.title,
+              title: m.title || m.Title || "",
+              description: m.description || m.Description || "",
+              genre:
+                (m.genre && typeof m.genre === "string" && m.genre) ||
+                (m.genre && m.genre.name) ||
+                (m.Genre && typeof m.Genre === "string" && m.Genre) ||
+                (m.Genre && m.Genre.Name) ||
+                "",
+              director:
+                (m.director && typeof m.director === "string" && m.director) ||
+                (m.director && m.director.name) ||
+                (m.Director && typeof m.Director === "string" && m.Director) ||
+                (m.Director && m.Director.Name) ||
+                "",
+              image: m.image || m.ImagePath || m.Image || "",
+            }))
+          : [];
+        setMovies(normalized);
+      })
+      .catch((e) => {
+        setError(e.message || "Failed to fetch");
+        setMovies([]);
+      });
+  }, []);
+
+  // Get the genre name as plain text, no matter how it's stored on the movie
+  const getGenre = (movie) => {
+    if (!movie) return "";
+    if (movie.genre && typeof movie.genre === "string") return movie.genre;
+    if (movie.genre && movie.genre.name) return movie.genre.name;
+    if (movie.Genre && typeof movie.Genre === "string") return movie.Genre;
+    if (movie.Genre && movie.Genre.Name) return movie.Genre.Name;
+    return "";
+  };
 
   if (selectedMovie) {
+    const selectedGenre = getGenre(selectedMovie);
+    const similarMovies = movies.filter(
+      (m) =>
+        (m.id || m.title) !== (selectedMovie.id || selectedMovie.title) &&
+        getGenre(m) &&
+        getGenre(m) === selectedGenre
+    );
+
     return (
-      <MovieView
-        movie={selectedMovie}
-        onBackClick={() => setSelectedMovie(null)}
-      />
+      <div>
+        <MovieView
+          movie={selectedMovie}
+          onBackClick={() => setSelectedMovie(null)}
+        />
+        <hr />
+        <h3>Similar Movies</h3>
+        {similarMovies.length ? (
+          <div>
+            {similarMovies.map((m) => (
+              <MovieCard
+                key={m.id || m.title}
+                movie={m}
+                onMovieClick={(mv) => setSelectedMovie(mv)}
+              />
+            ))}
+          </div>
+        ) : (
+          <div>No similar movies.</div>
+        )}
+      </div>
     );
   }
+
+  if (error) return <div>Failed to load movies: {error}</div>;
+  if (!movies.length) return <div>No movies found.</div>;
 
   return (
     <div>
       {movies.map((movie) => (
         <MovieCard
-          key={movie.id}
+          key={movie.id || movie.title}
           movie={movie}
-          onMovieClick={(movie) => setSelectedMovie(movie)}
+          onMovieClick={(mv) => setSelectedMovie(mv)}
         />
       ))}
     </div>
   );
 };
+
+MainView.propTypes = {};
 
 export default MainView;
